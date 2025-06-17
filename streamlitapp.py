@@ -1,17 +1,18 @@
+# Page configuration MUST be the first Streamlit command
 import streamlit as st
-import tensorflow as tf
-from tensorflow import keras
-import numpy as np
-from PIL import Image
-import io
-
-# Set page configuration
 st.set_page_config(
     page_title="Tile Defect Detection",
     page_icon="🔍",
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+# Then all other imports
+import tensorflow as tf
+from tensorflow import keras
+import numpy as np
+from PIL import Image
+import io
 
 # Custom CSS for better styling
 st.markdown("""
