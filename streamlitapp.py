@@ -1,9 +1,17 @@
 import streamlit as st
-import tensorflow as tf
-from tensorflow import keras
 import numpy as np
 from PIL import Image
 import io
+
+# Try to import tensorflow with error handling
+try:
+    import tensorflow as tf
+    from tensorflow import keras
+    TF_AVAILABLE = True
+except ImportError as e:
+    st.error(f"TensorFlow import failed: {e}")
+    st.error("Please ensure TensorFlow is properly installed.")
+    TF_AVAILABLE = False
 
 # Set page configuration
 st.set_page_config(
@@ -53,11 +61,16 @@ st.markdown("""
 @st.cache_resource
 def load_model():
     """Load the trained Keras model"""
+    if not TF_AVAILABLE:
+        st.error("TensorFlow is not available. Cannot load model.")
+        return None
+    
     try:
         model = keras.models.load_model('keras_model.h5')
         return model
     except Exception as e:
         st.error(f"Error loading model: {str(e)}")
+        st.error("Please ensure 'keras_model.h5' is in the correct directory.")
         return None
 
 def preprocess_image(image):
@@ -105,6 +118,12 @@ def predict_tile_defect(model, image):
 def main():
     # Main header
     st.markdown('<h1 class="main-header">🔍 Tile Defect Detection System</h1>', unsafe_allow_html=True)
+    
+    # Check if TensorFlow is available
+    if not TF_AVAILABLE:
+        st.error("❌ TensorFlow is not available. Please check the installation.")
+        st.info("Make sure 'tensorflow-cpu>=2.15.0' is in your requirements.txt")
+        return
     
     # Sidebar
     st.sidebar.header("📋 Instructions")
