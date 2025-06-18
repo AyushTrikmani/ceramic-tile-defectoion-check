@@ -68,6 +68,8 @@ def save_prediction_log(image_name, result, confidence):
     except Exception as e:
         st.warning(f"Logging not available: {str(e)}")
         return False
+
+def predict_defect(model, image_array):
     """Make prediction on the preprocessed image"""
     try:
         predictions = model.predict(image_array)
@@ -85,7 +87,7 @@ def save_prediction_log(image_name, result, confidence):
         st.error(f"Error making prediction: {str(e)}")
         return None, None, None
 
-def predict_defect(model, image_array):
+def main():
     st.title("🔍 Ceramic Tile Defect Detection")
     st.markdown("Upload an image of a ceramic tile to check for defects")
     
@@ -178,7 +180,12 @@ def predict_defect(model, image_array):
     
     # Model info
     with st.expander("🤖 About the Model"):
-        st.markdown("""
+        try:
+            username = st.secrets.get("DB_USERNAME", "Anonymous")
+        except:
+            username = "Anonymous"
+            
+        st.markdown(f"""
         This ceramic tile defect detection model uses deep learning to classify tiles as:
         - **Class 0**: Non Defected (Good quality tile)
         - **Class 1**: Defected (Tile with defects)
@@ -190,14 +197,17 @@ def predict_defect(model, image_array):
         - Model: keras_model.h5
         - Classes: 0 (Non Defected), 1 (Defected)
         - Input Size: 224x224 pixels
-        - User: {st.secrets.get("DB_USERNAME", "Anonymous")}
+        - User: {username}
         """)
 
     # Debug info (only show if secrets are configured)
-    if st.secrets.get("some_key"):
-        with st.expander("🔧 Debug Info"):
-            st.write(f"Some Key Value: {st.secrets['some_key']}")
-            st.write("Secrets are properly configured!")
+    try:
+        if st.secrets.get("some_key"):
+            with st.expander("🔧 Debug Info"):
+                st.write(f"Some Key Value: {st.secrets['some_key']}")
+                st.write("Secrets are properly configured!")
+    except:
+        pass  # Secrets not available, skip debug info
 
 if __name__ == "__main__":
     main()
