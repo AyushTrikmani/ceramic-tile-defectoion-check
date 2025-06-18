@@ -5,97 +5,71 @@ import tensorflow as tf
 import cv2
 import time
 
-# Configure page
+# Configure app
 st.set_page_config(
-    page_title="Ceramic Tiles Defect Detector",
-    page_icon="🖼️",
-    layout="centered",
+    page_title="Tile Defect Detector",
+    layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Load model with error handling
 @st.cache_resource
 def load_model():
     try:
-        model = tf.keras.models.load_model('keras_model.h5')
-        return model
+        return tf.keras.models.load_model('keras_model.h5')
     except Exception as e:
-        st.error(f"Failed to load model: {str(e)}")
+        st.error(f"Model loading failed: {str(e)}")
         st.stop()
 
-# Load labels
 @st.cache_resource
 def load_labels():
     try:
-        with open('labels.txt', 'r') as f:
-            return [line.strip() for line in f.readlines()]
+        with open('labels.txt') as f:
+            return [x.strip() for x in f.readlines()]
     except Exception as e:
-        st.error(f"Failed to load labels: {str(e)}")
+        st.error(f"Label loading failed: {str(e)}")
         st.stop()
 
-# Preprocess image
-def preprocess_image(image, size=(224, 224)):
-    try:
-        img = np.array(image)
-        if len(img.shape) == 3 and img.shape[2] == 4:
-            img = img[..., :3]
-        img = cv2.resize(img, size)
-        img = (img.astype(np.float32) / 127.5) - 1
-        return np.expand_dims(img, axis=0)
-    except Exception as e:
-        st.error(f"Image processing error: {str(e)}")
-        return None
+def preprocess(img):
+    img = np.array(img)
+    if img.ndim == 3 and img.shape[2] == 4:
+        img = img[..., :3]
+    img = cv2.resize(img, (224, 224))
+    return (img.astype(np.float32) / 127.5) - 1
 
 def main():
-    st.title("Ceramic Tiles Defect Detection")
-    st.write("Upload an image to check for defects")
+    st.title("🔍 Tile Defect Inspector")
+    st.write("Upload a tile image for defect detection")
     
-    # Load resources
     model = load_model()
     labels = load_labels()
     
-    # File uploader
-    uploaded_file = st.file_uploader(
-        "Choose an image...", 
-        type=["jpg", "jpeg", "png"],
-        help="Maximum file size: 20MB"
-    )
+    uploaded = st.file_uploader("Choose image...", type=["jpg", "jpeg", "png"])
     
-    if uploaded_file is not None:
+    if uploaded:
         try:
-            # Display image
-            image = Image.open(uploaded_file)
-            st.image(image, caption="Uploaded Image", use_column_width=True)
+            img = Image.open(uploaded)
+            st.image(img, caption="Your Tile", width=300)
             
-            # Process and predict
-            with st.spinner("Analyzing image..."):
-                processed_img = preprocess_image(image)
-                if processed_img is None:
-                    return
+            with st.spinner("Analyzing..."):
+                start = time.time()
+                processed = np.expand_dims(preprocess(img), axis=0)
+                pred = model.predict(processed)
+                time_taken = time.time() - start
                 
-                start_time = time.time()
-                prediction = model.predict(processed_img)
-                elapsed = time.time() - start_time
-                
-                # Get results
-                class_idx = np.argmax(prediction[0])
-                confidence = prediction[0][class_idx]
-                label = labels[class_idx]
-                
-                # Display results
-                st.subheader("Results")
-                if class_idx == 0:
-                    st.success(f"✅ {label} (Confidence: {confidence:.2%})")
-                else:
-                    st.error(f"❌ {label} (Confidence: {confidence:.2%})")
-                
-                st.write(f"Processing time: {elapsed:.2f} seconds")
-                
-                # Confidence meter
-                st.progress(float(confidence))
-                
+            result = np.argmax(pred[0])
+            confidence = pred[0][result]
+            
+            st.subheader("🔬 Results")
+            if result == 0:
+                st.success(f"✅ Non-Defected ({(confidence*100):.1f}% confidence)")
+            else:
+                st.error(f"❌ Defected ({(confidence*100):.1f}% confidence)")
+            
+            st.progress(float(confidence))
+            st.caption(f"Analysis took {time_taken:.2f} seconds")
+            
         except Exception as e:
-            st.error(f"An error occurred: {str(e)}")
+            st.error(f"Error: {str(e)}")
 
 if __name__ == "__main__":
     main()
