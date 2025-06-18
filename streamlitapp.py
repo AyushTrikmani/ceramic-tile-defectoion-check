@@ -1,7 +1,7 @@
 import streamlit as st
 from PIL import Image
 import numpy as np
-import tensorflow as tf
+import keras
 import cv2
 
 # Set page config
@@ -15,8 +15,8 @@ st.set_page_config(
 @st.cache_resource
 def load_model_and_labels():
     try:
-        # Load the model
-        model = tf.keras.models.load_model('keras_model.h5', compile=False)
+        # Load the model using keras (compatible with TensorFlow 2.12.0)
+        model = keras.models.load_model('keras_model.h5', compile=False)
         
         # Load labels
         with open('labels.txt', 'r') as f:
