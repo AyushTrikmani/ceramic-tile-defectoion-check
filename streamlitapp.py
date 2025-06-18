@@ -13,20 +13,14 @@ st.set_page_config(
 )
 
 @st.cache_resource
-def load_model():
+def load_assets():
     try:
-        return tf.keras.models.load_model('keras_model.h5')
-    except Exception as e:
-        st.error(f"Model loading failed: {str(e)}")
-        st.stop()
-
-@st.cache_resource
-def load_labels():
-    try:
+        model = tf.keras.models.load_model('keras_model.h5')
         with open('labels.txt') as f:
-            return [x.strip() for x in f.readlines()]
+            labels = [x.strip() for x in f.readlines()]
+        return model, labels
     except Exception as e:
-        st.error(f"Label loading failed: {str(e)}")
+        st.error(f"Initialization error: {str(e)}")
         st.stop()
 
 def preprocess_image(image):
@@ -42,11 +36,10 @@ def preprocess_image(image):
         return None
 
 def main():
-    st.title("🔍 Tile Defect Inspector")
-    st.write("Upload a ceramic tile image for defect detection")
+    st.title("🔍 Ceramic Tile Defect Inspector")
+    st.write("Upload an image to detect manufacturing defects")
     
-    model = load_model()
-    labels = load_labels()
+    model, labels = load_assets()
     
     uploaded = st.file_uploader(
         "Choose an image...", 
@@ -71,17 +64,18 @@ def main():
                 result = np.argmax(pred[0])
                 confidence = pred[0][result]
                 
-                st.subheader("Results")
+                st.subheader("🔬 Results")
                 if result == 0:
-                    st.success(f"✅ {labels[result]} ({(confidence*100):.1f}% confidence)")
+                    st.success(f"✅ {labels[result]}")
                 else:
-                    st.error(f"❌ {labels[result]} ({(confidence*100):.1f}% confidence)")
+                    st.error(f"❌ {labels[result]}")
                 
+                st.metric("Confidence", f"{confidence*100:.1f}%")
                 st.progress(float(confidence))
-                st.caption(f"Analysis took {elapsed:.2f} seconds")
+                st.caption(f"Analysis time: {elapsed:.2f}s")
                 
         except Exception as e:
-            st.error(f"Error: {str(e)}")
+            st.error(f"Processing error: {str(e)}")
 
 if __name__ == "__main__":
     main()
