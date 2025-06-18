@@ -357,33 +357,33 @@ def main():
             uploaded_image = camera_input()
             image_name = f"camera_capture_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
         
-    elif input_method == "🖼️ Sample Images":
-    # Create a dictionary of sample images with labels
-    sample_images = {
-        "Sample 1 - Defected": "sample1.jpeg",
-        "Sample 2 - Non-Defected": "sample2.jpeg",
-        "Sample 3 - Edge Defect": "sample3.jpeg"
-    }
-    
-    sample_option = st.selectbox(
-        "Select a sample image:",
-        ["Select..."] + list(sample_images.keys())
-    )
-    
-    if sample_option != "Select...":
-        try:
-            # Load the selected sample image
-            image_path = sample_images[sample_option]
-            uploaded_image = Image.open(image_path)
-            image_name = image_path
-            st.success(f"Loaded sample image: {sample_option}")
+           elif input_method == "🖼️ Sample Images":
+            # Create a dictionary of sample images with labels
+            sample_images = {
+                "Sample 1 - Defected": "sample1.jpeg",
+                "Sample 2 - Non-Defected": "sample2.jpeg",
+                "Sample 3 - Edge Defect": "sample3.jpeg"
+            }
             
-            # Display the sample image
-            st.image(uploaded_image, 
-                    caption=f"Sample: {sample_option}", 
-                    use_column_width=True)
-        except Exception as e:
-            st.error(f"Error loading sample image: {str(e)}")
+            sample_option = st.selectbox(
+                "Select a sample image:",
+                ["Select..."] + list(sample_images.keys())
+            )
+            
+            if sample_option != "Select...":
+                try:
+                    # Load the selected sample image
+                    image_path = sample_images[sample_option]
+                    uploaded_image = Image.open(image_path)
+                    image_name = image_path
+                    st.success(f"Loaded sample image: {sample_option}")
+                    
+                    # Display the sample image
+                    st.image(uploaded_image, 
+                            caption=f"Sample: {sample_option}", 
+                            use_column_width=True)
+                except Exception as e:
+                    st.error(f"Error loading sample image: {str(e)}")
         
         # Display uploaded image with enhancements
         if uploaded_image:
