@@ -9,6 +9,7 @@ import json
 import plotly.graph_objects as go
 import plotly.express as px
 from plotly.subplots import make_subplots
+import os
 
 # Set page config with custom theme
 st.set_page_config(
@@ -71,6 +72,15 @@ st.markdown("""
         background: #f8f9ff;
     }
     
+    .sample-image-container {
+        border: 2px solid #667eea;
+        border-radius: 10px;
+        padding: 1rem;
+        text-align: center;
+        background: #f8f9ff;
+        margin: 0.5rem 0;
+    }
+    
     .stProgress > div > div > div > div {
         background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
     }
@@ -83,6 +93,22 @@ if 'prediction_history' not in st.session_state:
 if 'processing_stats' not in st.session_state:
     st.session_state.processing_stats = {'total_processed': 0, 'defected': 0, 'non_defected': 0}
 
+# Sample images configuration
+SAMPLE_IMAGES = {
+    "Sample Tile 1": {
+        "filename": "sample1.jpeg",
+        "description": "Ceramic tile sample for defect analysis"
+    },
+    "Sample Tile 2": {
+        "filename": "sample2.jpeg", 
+        "description": "Another ceramic tile sample"
+    },
+    "Sample Tile 3": {
+        "filename": "sample3.jpeg",
+        "description": "Third ceramic tile sample"
+    }
+}
+
 # Cache the model loading
 @st.cache_resource
 def load_model():
@@ -91,6 +117,21 @@ def load_model():
         return model
     except Exception as e:
         st.error(f"Error loading model: {str(e)}")
+        return None
+
+@st.cache_data
+def load_sample_image(filename):
+    """Load sample image from the repository"""
+    try:
+        # Try to load the image from the current directory
+        if os.path.exists(filename):
+            image = Image.open(filename)
+            return image
+        else:
+            st.error(f"Sample image {filename} not found in repository")
+            return None
+    except Exception as e:
+        st.error(f"Error loading sample image {filename}: {str(e)}")
         return None
 
 def enhance_image(image, brightness=1.0, contrast=1.0, sharpness=1.0):
@@ -279,6 +320,41 @@ def camera_input():
     st.markdown('</div>', unsafe_allow_html=True)
     return None
 
+def sample_images_section():
+    """Enhanced sample images section with previews"""
+    st.markdown("### 🖼️ Sample Images")
+    st.markdown("Choose from our curated sample images for testing:")
+    
+    # Create columns for sample image selection
+    cols = st.columns(len(SAMPLE_IMAGES))
+    
+    selected_sample = None
+    selected_name = None
+    
+    for idx, (sample_name, sample_info) in enumerate(SAMPLE_IMAGES.items()):
+        with cols[idx]:
+            st.markdown(f'<div class="sample-image-container">', unsafe_allow_html=True)
+            
+            # Try to load and display thumbnail
+            sample_image = load_sample_image(sample_info['filename'])
+            if sample_image:
+                # Create thumbnail for preview
+                thumbnail = sample_image.copy()
+                thumbnail.thumbnail((150, 150))
+                st.image(thumbnail, caption=sample_name, use_column_width=True)
+                
+                if st.button(f"Select {sample_name}", key=f"select_{idx}"):
+                    selected_sample = sample_image
+                    selected_name = sample_info['filename']
+            else:
+                st.error(f"Could not load {sample_info['filename']}")
+                st.info("Please ensure the sample images are in your repository root directory")
+            
+            st.markdown(f"<small>{sample_info['description']}</small>", unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
+    
+    return selected_sample, selected_name
+
 def main():
     # Header
     st.markdown("""
@@ -342,6 +418,7 @@ def main():
         st.subheader("📤 Input")
         
         uploaded_image = None
+        image_name = None
         
         if input_method == "📁 File Upload":
             uploaded_file = st.file_uploader(
@@ -355,34 +432,11 @@ def main():
         
         elif input_method == "📸 Camera Capture":
             uploaded_image = camera_input()
-            image_name = f"camera_capture_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
-                elif input_method == "🖼️ Sample Images":
-            # Create a dictionary of sample images with labels
-            sample_images = {
-                "Sample 1 - Defected": "sample1.jpeg",
-                "Sample 2 - Non-Defected": "sample2.jpeg", 
-                "Sample 3 - Edge Defect": "sample3.jpeg"
-            }
-            
-            sample_option = st.selectbox(
-                "Select a sample image:",
-                ["Select..."] + list(sample_images.keys())
-            )
-            
-            if sample_option != "Select...":
-                try:
-                    # Load the selected sample image
-                    image_path = sample_images[sample_option]
-                    uploaded_image = Image.open(image_path)
-                    image_name = image_path
-                    st.success(f"Loaded sample image: {sample_option}")
-                    
-                    # Display the sample image
-                    st.image(uploaded_image,
-                            caption=f"Sample: {sample_option}",
-                            use_column_width=True)
-                except Exception as e:
-                    st.error(f"Error loading sample image: {str(e)}")
+            if uploaded_image:
+                image_name = f"camera_capture_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
+        
+        elif input_method == "🖼️ Sample Images":
+            uploaded_image, image_name = sample_images_section()
         
         # Display uploaded image with enhancements
         if uploaded_image:
@@ -400,7 +454,7 @@ def main():
     with col2:
         st.subheader("🎯 Analysis Results")
         
-        if uploaded_image:
+        if uploaded_image and image_name:
             with st.spinner('🔄 AI Analysis in Progress...'):
                 # Preprocess image
                 processed_image = preprocess_image(enhanced_image)
@@ -487,7 +541,7 @@ def main():
                         """, unsafe_allow_html=True)
         
         else:
-            st.info("👆 Please upload an image or use camera to start analysis")
+            st.info("👆 Please upload an image, use camera, or select a sample to start analysis")
     
     # Statistics Dashboard
     if st.session_state.processing_stats['total_processed'] > 0:
@@ -530,6 +584,11 @@ def main():
             - **Focus**: Ensure the image is sharp and clear
             - **Angle**: Capture the tile straight-on
             - **Background**: Use a neutral background
+            
+            ### 🖼️ Sample Images
+            - Use sample images to test the system quickly
+            - Each sample represents different tile conditions
+            - Perfect for demonstration and training purposes
             """)
     
     with feature_col2:
@@ -568,6 +627,11 @@ def main():
             - **Chips**: Edge and corner damage
             - **Discoloration**: Color inconsistencies
             - **Surface Defects**: Texture abnormalities
+            
+            ### 📁 Sample Images
+            - **sample1.jpeg**: First test sample
+            - **sample2.jpeg**: Second test sample  
+            - **sample3.jpeg**: Third test sample
             """)
     
     # Footer
