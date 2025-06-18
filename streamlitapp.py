@@ -2,7 +2,7 @@ import streamlit as st
 from PIL import Image
 import numpy as np
 from tensorflow.keras.models import load_model
-
+import cv2
 
 # Set page config
 st.set_page_config(
