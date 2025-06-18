@@ -1,1 +1,0 @@
-# ceramic-tile-defectoion-check
